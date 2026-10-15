@@ -1,5 +1,11 @@
 # Changelog
 
+## 3.0.3
+
+README only.
+
+- "Migrating to v3" replaces "Migrating from v1", with steps from both v2 and v1.
+
 ## 3.0.2
 
 README only.

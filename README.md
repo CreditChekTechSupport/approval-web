@@ -28,7 +28,7 @@ The SDK opens the hosted CreditChek widget in a modal on your page, tells you as
 11. [Testing](#testing)
 12. [Errors and troubleshooting](#errors-and-troubleshooting)
 13. [Security checklist](#security-checklist)
-14. [Migrating from v1](#migrating-from-v1)
+14. [Migrating to v3](#migrating-to-v3)
 
 ---
 
@@ -474,22 +474,33 @@ Use the **test** public and secret keys from the App section of the [dashboard](
 
 ---
 
-## Migrating from v1
+## Migrating to v3
 
-v2 follows the new session-based widget, which needs a `sessionId` created by your server.
+### From v2
 
-| v1 | v2 |
+| v2 | v3 |
+|---|---|
+| `import { useCreditChek } from "creditchek-react-sdk"` | `import { useCreditChek } from "@creditchektechsupport/react-sdk"` |
+| Session created with `{ "services": [...] }` | Session created with `{ "widgetId": "<your widget ID>" }` ([Step 1](#step-1-create-a-session-on-your-server)) |
+| `useCreditChek({ publicKey, ... })` | `useCreditChek({ publicKey, widgetId, ... })`. `widgetId` is required |
+| `modules: ["identity", "liveness"]` | Removed. Your widget's setup on the business dashboard decides the steps |
+| `environment: "development"` | Removed. Your public key decides live or test mode |
+| `themeColor: "#0046E6"` | Removed |
+
+### From v1
+
+v3 uses the session-based widget, which needs a `sessionId` created by your server.
+
+| v1 | v3 |
 |---|---|
 | `import creditchekSDK from "creditchek-react-sdk"` | `import { useCreditChek } from "@creditchektechsupport/react-sdk"` |
 | `creditchekSDK.open({ publicKey, module, onComplete, onClose })` | `const { open } = useCreditChek({ publicKey, widgetId, onStep, onClose })`, then `open(sessionId)` |
 | `module: ["identity"]` | Your widget's setup on the business dashboard decides the steps |
-| `"income"`, `"credit"`, `"recova"` modules | Not available in v2 yet |
+| `"income"`, `"credit"`, `"recova"` modules | Not available in v3 yet |
 | `onComplete(result)` for each step | `onStep({ module, status })` |
 | `onClose()` | `onClose({ sessionId, steps })` |
 | Opens a new tab | Opens a modal on your page |
 | No server needed | Your server creates and reads sessions ([Step 1](#step-1-create-a-session-on-your-server), [Step 4](#step-4-confirm-the-result-on-your-server)) |
-
-**From v2:** create sessions with `widgetId` (your widget ID) instead of `services`, and pass the same ID to the SDK as `widgetId`, which is now required. Remove `modules` and `environment`: your widget decides the steps, and your public key decides live or test mode. Remove `themeColor`.
 
 ---
 
