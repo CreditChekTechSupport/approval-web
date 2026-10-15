@@ -1,5 +1,14 @@
 # Changelog
 
+## 3.0.0
+
+Breaking: the widget URL now takes `publicKey`, `sessionId` and `widgetId`, plus optional prefill values.
+
+- New required `widgetId` option. Opening without it fails with `invalid_config`.
+- Removed the `modules` and `environment` options. The session's `services` decide the steps, and the public key decides live or test mode.
+- Removed the `CreditChekEnvironment` type.
+- Removed the `themeColor` option. The loading spinner is deep grey.
+
 ## 2.0.0
 
 Rewritten for the session-based CreditChek widget. See "Migrating from v1" in the README.

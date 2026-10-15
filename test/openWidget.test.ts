@@ -13,7 +13,7 @@ afterEach(() => {
 });
 
 describe("openCreditChekWidget", () => {
-  const base = { publicKey: "pk_test" };
+  const base = { publicKey: "pk_test", widgetId: "w-1" };
 
   it("renders a dialog with a camera-enabled iframe pointed at the widget", () => {
     document.body.style.overflow = "auto";
@@ -142,7 +142,7 @@ describe("openCreditChekWidget", () => {
 
   it("reports invalid_config without rendering anything", () => {
     const onError = vi.fn();
-    openCreditChekWidget({ publicKey: "", sessionId: "s-1", onError });
+    openCreditChekWidget({ publicKey: "", widgetId: "w-1", sessionId: "s-1", onError });
     expect(getModal().root).toBeNull();
     expect(onError).toHaveBeenCalledWith(expect.objectContaining({ code: "invalid_config" }));
   });
@@ -151,14 +151,14 @@ describe("openCreditChekWidget", () => {
 describe("openCreditChekWidget edge cases", () => {
   it("never opens another window", () => {
     const { open } = stubWindowOpen();
-    openCreditChekWidget({ publicKey: "pk_test", sessionId: () => "s-1" });
-    openCreditChekWidget({ publicKey: "pk_test", sessionId: "s-2" });
+    openCreditChekWidget({ publicKey: "pk_test", widgetId: "w-1", sessionId: () => "s-1" });
+    openCreditChekWidget({ publicKey: "pk_test", widgetId: "w-1", sessionId: "s-2" });
     expect(open).not.toHaveBeenCalled();
   });
 
   it("reports session_failed when the sessionId function returns nothing", async () => {
     const onError = vi.fn();
-    openCreditChekWidget({ publicKey: "pk_test", sessionId: () => "", onError });
+    openCreditChekWidget({ publicKey: "pk_test", widgetId: "w-1", sessionId: () => "", onError });
     await vi.waitFor(() => expect(onError).toHaveBeenCalledWith(expect.objectContaining({ code: "session_failed" })));
   });
 
@@ -166,6 +166,7 @@ describe("openCreditChekWidget edge cases", () => {
     const onError = vi.fn();
     openCreditChekWidget({
       publicKey: "pk_test",
+      widgetId: "w-1",
       sessionId: () => {
         throw new Error("boom");
       },
@@ -176,7 +177,7 @@ describe("openCreditChekWidget edge cases", () => {
 
   it("ignores messages after the widget has closed", () => {
     const onStep = vi.fn();
-    openCreditChekWidget({ publicKey: "pk_test", sessionId: "s-1", onStep });
+    openCreditChekWidget({ publicKey: "pk_test", widgetId: "w-1", sessionId: "s-1", onStep });
     const frameWindow = getModal().frame!.contentWindow;
     postFrom(frameWindow, { type: "close" });
     postFrom(frameWindow, { module: "identity", status: "successful" });

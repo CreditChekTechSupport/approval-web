@@ -16,10 +16,8 @@ export interface CreditChekButtonProps
 export function CreditChekButton({
   sessionId,
   publicKey,
-  modules,
-  themeColor,
+  widgetId,
   prefill,
-  environment,
   widgetUrl,
   onStep,
   onClose,
@@ -31,10 +29,8 @@ export function CreditChekButton({
 }: CreditChekButtonProps) {
   const { open, isOpen } = useCreditChek({
     publicKey,
-    modules,
-    themeColor,
+    widgetId,
     prefill,
-    environment,
     widgetUrl,
     onStep,
     onClose,

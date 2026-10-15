@@ -17,7 +17,7 @@ afterEach(() => {
 describe("useCreditChek", () => {
   it("tracks isOpen and steps through a full flow", () => {
     const onClose = vi.fn();
-    const { result } = renderHook(() => useCreditChek({ publicKey: "pk", onClose }));
+    const { result } = renderHook(() => useCreditChek({ publicKey: "pk", widgetId: "w-1", onClose }));
 
     act(() => result.current.open("s-1"));
     expect(result.current.isOpen).toBe(true);
@@ -32,7 +32,7 @@ describe("useCreditChek", () => {
   });
 
   it("does not open a second modal while one is open", () => {
-    const { result } = renderHook(() => useCreditChek({ publicKey: "pk" }));
+    const { result } = renderHook(() => useCreditChek({ publicKey: "pk", widgetId: "w-1" }));
     act(() => result.current.open("s-1"));
     act(() => result.current.open("s-2"));
     expect(document.querySelectorAll(".creditchek-modal")).toHaveLength(1);
@@ -40,7 +40,7 @@ describe("useCreditChek", () => {
 
   it("closes from close()", () => {
     const onClose = vi.fn();
-    const { result } = renderHook(() => useCreditChek({ publicKey: "pk", onClose }));
+    const { result } = renderHook(() => useCreditChek({ publicKey: "pk", widgetId: "w-1", onClose }));
     act(() => result.current.open("s-1"));
     act(() => result.current.close());
     expect(result.current.isOpen).toBe(false);
@@ -49,7 +49,7 @@ describe("useCreditChek", () => {
 
   it("removes the modal on unmount without calling back", () => {
     const onClose = vi.fn();
-    const { result, unmount } = renderHook(() => useCreditChek({ publicKey: "pk", onClose }));
+    const { result, unmount } = renderHook(() => useCreditChek({ publicKey: "pk", widgetId: "w-1", onClose }));
     act(() => result.current.open("s-1"));
     unmount();
     vi.advanceTimersByTime(300);
@@ -61,7 +61,7 @@ describe("useCreditChek", () => {
 describe("useCreditChek errors and options", () => {
   it("exposes errors and resets isOpen", () => {
     const onError = vi.fn();
-    const { result } = renderHook(() => useCreditChek({ publicKey: "", onError }));
+    const { result } = renderHook(() => useCreditChek({ publicKey: "", widgetId: "w-1", onError }));
 
     act(() => result.current.open("s-1"));
     expect(result.current.isOpen).toBe(false);
@@ -72,7 +72,7 @@ describe("useCreditChek errors and options", () => {
   it("uses the latest callbacks", () => {
     const first = vi.fn();
     const second = vi.fn();
-    const { result, rerender } = renderHook(({ onStep }) => useCreditChek({ publicKey: "pk", onStep }), {
+    const { result, rerender } = renderHook(({ onStep }) => useCreditChek({ publicKey: "pk", widgetId: "w-1", onStep }), {
       initialProps: { onStep: first },
     });
 
@@ -88,7 +88,7 @@ describe("useCreditChek errors and options", () => {
 describe("CreditChekButton", () => {
   it("opens the modal on click and passes button props through", () => {
     render(
-      <CreditChekButton publicKey="pk" sessionId="s-1" className="cta" modules={["identity", "liveness"]}>
+      <CreditChekButton publicKey="pk" widgetId="w-1" sessionId="s-1" className="cta">
         Verify
       </CreditChekButton>,
     );
@@ -98,14 +98,14 @@ describe("CreditChekButton", () => {
     expect(button.getAttribute("type")).toBe("button");
 
     fireEvent.click(button);
-    expect(getModal().frame?.src).toContain("module=identity%2Cliveness");
+    expect(getModal().frame?.src).toContain("widgetId=w-1");
     expect(button.getAttribute("aria-busy")).toBe("true");
   });
 
   it("runs onClick first and lets it cancel the open", () => {
     const onClick = vi.fn((event: { preventDefault: () => void }) => event.preventDefault());
     render(
-      <CreditChekButton publicKey="pk" sessionId="s-1" onClick={onClick}>
+      <CreditChekButton publicKey="pk" widgetId="w-1" sessionId="s-1" onClick={onClick}>
         Verify
       </CreditChekButton>,
     );

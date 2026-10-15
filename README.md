@@ -39,7 +39,7 @@ Every verification takes four steps. Two happen on your server and two in your R
 | # | Where | What happens |
 |---|---|---|
 | 1 | **Your server** | Creates a **widget session** with your **secret key**, and returns its `sessionId` to your app |
-| 2 | **Your React app** | Calls `open()` from this SDK. The widget opens in a modal with your **public key** and the `sessionId` |
+| 2 | **Your React app** | Calls `open()` from this SDK. The widget opens in a modal with your **public key**, your **widget ID** and the `sessionId` |
 | 3 | **Your React app** | The customer completes the steps. The SDK calls `onStep` as each one finishes, and `onClose` when the modal closes |
 | 4 | **Your server** | Reads the session with your secret key to find out what the customer actually completed |
 
@@ -51,7 +51,8 @@ Every verification takes four steps. Two happen on your server and two in your R
     │                  │                        │───────────────────────▶│
     │                  │       sessionId        │◀───────────────────────│
     │                  │◀───────────────────────│                        │
-    │  2. modal opens (publicKey + sessionId)   │                        │
+    │  2. modal opens (publicKey, widgetId,     │                        │
+    │                  sessionId)               │                        │
     │◀─────────────────│                        │                        │
     │  completes steps │  3. onStep … onClose   │                        │
     │─────────────────▶│  GET /api/session/:id  │                        │
@@ -77,6 +78,8 @@ Every verification takes four steps. Two happen on your server and two in your R
 | **Public key** | Your React app, passed to the SDK | No, it identifies your business |
 
 Always use a secret key and a public key **from the same app and the same pair** (both live, or both test).
+
+**Widget ID.** Identifies the widget to load. You pass it to the SDK with your public key.
 
 **API base URL** (your server): `https://api.creditchek.africa/v1`
 
@@ -186,7 +189,7 @@ async function createSession() {
 export function VerifyButton() {
   const { open, isOpen } = useCreditChek({
     publicKey: "YOUR_PUBLIC_KEY",
-    modules: ["identity", "liveness"],
+    widgetId: "YOUR_WIDGET_ID",
     onClose: ({ sessionId }) => {
       // Step 3: the customer is done. Ask your server for the result.
     },
@@ -209,8 +212,8 @@ import { CreditChekButton } from "@creditchektechsupport/react-sdk";
 
 <CreditChekButton
   publicKey="YOUR_PUBLIC_KEY"
+  widgetId="YOUR_WIDGET_ID"
   sessionId={createSession}
-  modules={["identity", "liveness"]}
   onClose={({ sessionId }) => checkResult(sessionId)}
   className="btn btn-primary"
 >
@@ -282,8 +285,7 @@ export default function Verification({ customer }) {
 
   const { open, isOpen, steps } = useCreditChek({
     publicKey: import.meta.env.VITE_CREDITCHEK_PUBLIC_KEY,
-    modules: ["identity", "liveness"],
-    themeColor: "#0046E6",
+    widgetId: import.meta.env.VITE_CREDITCHEK_WIDGET_ID,
     prefill: { firstName: customer.firstName, lastName: customer.lastName },
     onClose: async ({ sessionId }) => {
       setMessage("Checking your result…");
@@ -330,9 +332,7 @@ const { open, close, isOpen, steps, error } = useCreditChek(options);
 | Option | Type | Default | Description |
 |---|---|---|---|
 | `publicKey` | `string` | **required** | Your public key. Must be from the same app and pair as the secret key that created the session |
-| `modules` | `("identity" \| "liveness")[]` | `["identity"]` | Steps to run, in order. See [Modules](#modules) |
-| `environment` | `"production" \| "development"` | from your key | `"development"` runs the widget in test mode and shows a Test mode notice. Left out, the widget takes live or test mode from your public key. See [Testing](#testing) |
-| `themeColor` | `string` | | Brand colour as hex, with or without `#`. Also colours the modal's loading spinner |
+| `widgetId` | `string` | **required** | Your widget ID |
 | `prefill` | `WidgetPrefill` | | Details you already hold: `firstName`, `lastName`, `dob` (`YYYY-MM-DD`), `bvn`, `nin`, `email`. Prefilled identity fields are locked in the widget |
 | `onStep` | `(event: WidgetStepEvent) => void` | | A step finished |
 | `onClose` | `(result: WidgetCloseResult) => void` | | The widget closed |
@@ -361,7 +361,7 @@ Takes every `useCreditChek` option, plus `sessionId` (a string or a function), p
 The same behaviour without React, for use outside components. Takes every `useCreditChek` option plus `sessionId`, and returns a handle:
 
 ```ts
-const handle = openCreditChekWidget({ publicKey, sessionId: createSession, onClose });
+const handle = openCreditChekWidget({ publicKey, widgetId, sessionId: createSession, onClose });
 handle.isOpen;   // boolean
 handle.focus();  // focus the widget
 handle.close();  // close the widget; onClose fires
@@ -401,7 +401,8 @@ All types are exported from the package.
 | `identity` | Enters their name, date of birth and BVN or NIN. At least two name words and the exact date of birth must match the official record | Their 11-digit BVN or NIN |
 | `liveness` | Centres their face in the camera, then follows prompts: look left, right, up and down, blink, smile. Their face is matched against the BVN or NIN photo | A camera, good lighting, no glasses or hat |
 
-- **Put `identity` before `liveness`**, in the same session: `modules: ["identity", "liveness"]`. Liveness compares the customer's face with the photo from their BVN or NIN.
+- **The steps come from the session.** The `services` you create the session with in [Step 1](#step-1-create-a-session-on-your-server) decide which steps the customer goes through.
+- **Include identity with liveness**, in the same session. Liveness compares the customer's face with the photo from their BVN or NIN.
 - **Completed steps are skipped.** If identity or liveness is already `completed` on the session, the widget skips it. If both are, the customer sees a success screen straight away.
 
 More modules (credit reports, income and Recova mandates) are coming to the React SDK.
@@ -410,18 +411,7 @@ More modules (credit reports, income and Recova mandates) are coming to the Reac
 
 ## Testing
 
-Use the **test** public and secret keys from the App section of the [dashboard](https://app.creditchek.africa/). They work with the same API URL and the same widget as your live keys.
-
-Set `environment` to match the keys, so the widget runs in the right mode:
-
-```jsx
-useCreditChek({
-  publicKey: import.meta.env.VITE_CREDITCHEK_PUBLIC_KEY,
-  environment: import.meta.env.PROD ? "production" : "development",
-});
-```
-
-`environment` is sent to the widget in its URL. It doesn't change the widget address: both environments use `https://securedwidget.creditchek.africa`.
+Use the **test** public and secret keys from the App section of the [dashboard](https://app.creditchek.africa/). They work with the same API URL and the same widget address (`https://securedwidget.creditchek.africa`) as your live keys. The widget runs in live or test mode to match the public key.
 
 **Next.js:** the package is marked `"use client"`, so you can import it into App Router client components directly. Keep the session routes in a Route Handler or API route, where the secret key stays on the server.
 
@@ -434,7 +424,7 @@ useCreditChek({
 | Code | Cause | Fix |
 |---|---|---|
 | `session_failed` | Your `sessionId` function threw or returned nothing | Check your server route. The widget is closed for you |
-| `invalid_config` | `publicKey` is missing or `modules` is empty | Fix the options |
+| `invalid_config` | `publicKey` or `widgetId` is missing | Fix the options |
 
 **Error screens inside the widget.** If the widget can't start, the customer sees an error screen with a code and their session ID. Closing it closes the widget, so `onClose` fires.
 
@@ -475,13 +465,15 @@ v2 follows the new session-based widget, which needs a `sessionId` created by yo
 | v1 | v2 |
 |---|---|
 | `import creditchekSDK from "creditchek-react-sdk"` | `import { useCreditChek } from "@creditchektechsupport/react-sdk"` |
-| `creditchekSDK.open({ publicKey, module, onComplete, onClose })` | `const { open } = useCreditChek({ publicKey, modules, onStep, onClose })`, then `open(sessionId)` |
-| `module: ["identity"]` | `modules: ["identity"]` or `["identity", "liveness"]` |
+| `creditchekSDK.open({ publicKey, module, onComplete, onClose })` | `const { open } = useCreditChek({ publicKey, widgetId, onStep, onClose })`, then `open(sessionId)` |
+| `module: ["identity"]` | The session's `services` decide the steps ([Step 1](#step-1-create-a-session-on-your-server)) |
 | `"income"`, `"credit"`, `"recova"` modules | Not available in v2 yet |
 | `onComplete(result)` for each step | `onStep({ module, status })` |
 | `onClose()` | `onClose({ sessionId, steps })` |
 | Opens a new tab | Opens a modal on your page |
 | No server needed | Your server creates and reads sessions ([Step 1](#step-1-create-a-session-on-your-server), [Step 4](#step-4-confirm-the-result-on-your-server)) |
+
+**From v2:** pass your `widgetId`, which is now required. Remove `modules` and `environment`: the session's `services` decide the steps, and your public key decides live or test mode. Remove `themeColor`.
 
 ---
 

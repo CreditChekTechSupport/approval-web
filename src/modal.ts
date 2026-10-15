@@ -11,10 +11,10 @@ const CSS = `
 .creditchek-modal--ready .creditchek-modal__frame{opacity:1}
 .creditchek-modal__loader{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;transition:opacity 200ms ease}
 .creditchek-modal--ready .creditchek-modal__loader{opacity:0;pointer-events:none}
-.creditchek-modal__spinner{width:36px;height:36px;border-radius:50%;border:3px solid rgba(0,70,230,.15);border-top-color:var(--creditchek-accent,#0046E6);animation:creditchek-spin .9s linear infinite}
+.creditchek-modal__spinner{width:36px;height:36px;border-radius:50%;border:3px solid rgba(52,64,84,.15);border-top-color:#344054;animation:creditchek-spin .9s linear infinite}
 .creditchek-modal__close{position:absolute;top:10px;right:10px;z-index:1;width:32px;height:32px;display:flex;align-items:center;justify-content:center;border:0;border-radius:999px;background:rgba(255,255,255,.9);color:#344054;cursor:pointer;box-shadow:0 1px 2px rgba(16,24,40,.12)}
 .creditchek-modal__close:hover{background:#fff}
-.creditchek-modal__close:focus-visible{outline:2px solid var(--creditchek-accent,#0046E6);outline-offset:2px}
+.creditchek-modal__close:focus-visible{outline:2px solid #344054;outline-offset:2px}
 @keyframes creditchek-spin{to{transform:rotate(360deg)}}
 @media (max-width:560px){
   .creditchek-modal{padding:0}
@@ -39,8 +39,6 @@ function injectStyles(): void {
 }
 
 export interface ModalOptions {
-  /** Spinner and focus-ring colour. */
-  accentColor?: string;
   /** Called when the customer dismisses the modal with the close button or Escape. */
   onDismiss: () => void;
 }
@@ -57,7 +55,7 @@ export interface Modal {
 }
 
 /** Renders the modal that hosts the widget iframe. Plain DOM, so it works with or without React. */
-export function createModal({ accentColor, onDismiss }: ModalOptions): Modal {
+export function createModal({ onDismiss }: ModalOptions): Modal {
   injectStyles();
 
   const previousFocus = document.activeElement as HTMLElement | null;
@@ -69,7 +67,6 @@ export function createModal({ accentColor, onDismiss }: ModalOptions): Modal {
   root.setAttribute("role", "dialog");
   root.setAttribute("aria-modal", "true");
   root.setAttribute("aria-label", "CreditChek verification");
-  if (accentColor) root.style.setProperty("--creditchek-accent", accentColor);
 
   const backdrop = document.createElement("div");
   backdrop.className = "creditchek-modal__backdrop";

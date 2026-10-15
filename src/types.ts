@@ -1,10 +1,7 @@
 import type { CreditChekError } from "./errors";
 
-/** A step the customer goes through in the widget, in the order you list them. */
+/** A step the customer goes through in the widget. */
 export type WidgetModule = "identity" | "liveness";
-
-/** Whether the widget runs live (`production`) or in test mode (`development`). */
-export type CreditChekEnvironment = "production" | "development";
 
 /** Customer details you already hold. Prefilled identity fields are locked in the widget. */
 export interface WidgetPrefill {
@@ -23,16 +20,9 @@ export interface WidgetPrefill {
 export interface WidgetConfig {
   /** Your public key. Must belong to the same app as the secret key that created the session. */
   publicKey: string;
-  /** Steps to run, in order. Defaults to `["identity"]`. Put `identity` before `liveness`. */
-  modules?: WidgetModule[];
-  /** Brand colour as hex, with or without `#`, e.g. `"#0046E6"`. */
-  themeColor?: string;
+  /** The widget to load. */
+  widgetId: string;
   prefill?: WidgetPrefill;
-  /**
-   * Sent to the widget as the `environment` query parameter. `"development"` runs it in test mode
-   * and shows its Test mode notice. Left out, the widget takes live or test mode from the public key.
-   */
-  environment?: CreditChekEnvironment;
   /** Override the widget address, e.g. for a preview build. */
   widgetUrl?: string;
 }

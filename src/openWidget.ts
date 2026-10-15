@@ -17,11 +17,6 @@ function messageType(data: unknown): unknown {
   return data && typeof data === "object" ? (data as Record<string, unknown>).type : undefined;
 }
 
-function accentColor(themeColor: string | undefined): string | undefined {
-  const hex = themeColor?.replace(/^#/, "");
-  return hex && /^[0-9a-f]{3,8}$/i.test(hex) ? `#${hex}` : undefined;
-}
-
 /**
  * Opens the CreditChek widget in a modal on the current page, and tracks it until it closes.
  *
@@ -121,7 +116,7 @@ export function openCreditChekWidget(options: OpenWidgetOptions): WidgetHandle {
     return handle;
   }
 
-  modal = createModal({ accentColor: accentColor(options.themeColor), onDismiss: closeWidget });
+  modal = createModal({ onDismiss: closeWidget });
   window.addEventListener("message", handleMessage);
 
   if (typeof sessionSource === "string") {
