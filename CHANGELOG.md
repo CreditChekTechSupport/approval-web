@@ -1,11 +1,18 @@
 # Changelog
 
+## 3.0.1
+
+README only.
+
+- Sessions are now created with `sdkId` (the widget ID from the business dashboard) instead of `services`. Step 1 shows the new request.
+- `publicKey`, `widgetId` and `sessionId` are listed as required in "Before you start" and the API reference.
+
 ## 3.0.0
 
 Breaking: the widget URL now takes `publicKey`, `sessionId` and `widgetId`, plus optional prefill values.
 
 - New required `widgetId` option. Opening without it fails with `invalid_config`.
-- Removed the `modules` and `environment` options. The session's `services` decide the steps, and the public key decides live or test mode.
+- Removed the `modules` and `environment` options. The widget decides the steps, and the public key decides live or test mode.
 - Removed the `CreditChekEnvironment` type.
 - Removed the `themeColor` option. The loading spinner is deep grey.
 

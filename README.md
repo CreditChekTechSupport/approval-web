@@ -70,6 +70,16 @@ Every verification takes four steps. Two happen on your server and two in your R
 
 ## Before you start
 
+**The widget needs three values to open.** All three are required:
+
+| Value | What it is | Where it comes from |
+|---|---|---|
+| `publicKey` | Your public key | The dashboard (see Keys below) |
+| `widgetId` | Your widget ID | Your business dashboard (see Widget ID below) |
+| `sessionId` | A new widget session for this verification | Your server creates it with your secret key ([Step 1](#step-1-create-a-session-on-your-server)) |
+
+Customer details you already hold can be passed as optional `prefill` values.
+
 **Keys.** Your keys are on the [CreditChek B2B dashboard](https://app.creditchek.africa/), in the **App** section. Each app has a live and a test pair:
 
 | Key | Where it's used | Keep it secret? |
@@ -79,7 +89,10 @@ Every verification takes four steps. Two happen on your server and two in your R
 
 Always use a secret key and a public key **from the same app and the same pair** (both live, or both test).
 
-**Widget ID.** Identifies the widget to load. You pass it to the SDK with your public key.
+**Widget ID.** Your widget ID is on your [CreditChek business dashboard](https://app.creditchek.africa/). Use the same ID in two places:
+
+- as `sdkId`, when your server creates a session ([Step 1](#step-1-create-a-session-on-your-server))
+- as `widgetId`, when your React app opens the widget ([Step 2](#step-2-open-the-widget))
 
 **API base URL** (your server): `https://api.creditchek.africa/v1`
 
@@ -108,22 +121,22 @@ pnpm add @creditchektechsupport/react-sdk
 
 ## Step 1: Create a session on your server
 
-Each verification needs its own widget session. The session records which services the customer must complete, and tracks their progress. Create it when the customer clicks to start: sessions are short-lived.
+Each verification needs its own widget session. The session links the verification to your widget, and tracks the customer's progress. Create it when the customer clicks to start: sessions are short-lived.
 
 ```http
 POST https://api.creditchek.africa/v1/auth/widget-session/token
 token: <your secret key>
 Content-Type: application/json
 
-{ "services": ["bvn", "liveness"] }
+{ "sdkId": "<your widget ID>" }
 ```
 
 | Field | Type | Description |
 |---|---|---|
-| `services` | `("bvn" \| "nin" \| "liveness")[]` | Services for this verification. Defaults to `["bvn"]` |
+| `sdkId` | `string` | **Required.** Your widget ID from the business dashboard. Use the same ID as `widgetId` in the SDK |
 | `sessionId` | `string` | Optional. Your own unique ID for the session |
 
-The services decide which identity document the customer uses: `bvn` and `nin` lets them choose, `nin` only means NIN, and otherwise it's BVN.
+Your widget's setup on the dashboard decides which steps the customer goes through.
 
 **Example** (Node.js 18+ with Express; any server language works):
 
@@ -133,6 +146,7 @@ import express from "express";
 
 const API_BASE = "https://api.creditchek.africa/v1";
 const SECRET_KEY = process.env.CREDITCHEK_SECRET_KEY; // server only
+const WIDGET_ID = process.env.CREDITCHEK_WIDGET_ID;
 
 async function creditchek(path, init = {}) {
   const res = await fetch(`${API_BASE}${path}`, {
@@ -150,7 +164,7 @@ app.post("/api/verification/session", async (req, res) => {
   try {
     const session = await creditchek("/auth/widget-session/token", {
       method: "POST",
-      body: JSON.stringify({ services: ["bvn", "liveness"] }),
+      body: JSON.stringify({ sdkId: WIDGET_ID }),
     });
     await saveSessionForCustomer(req, session.sessionId); // your storage
     res.json({ sessionId: session.sessionId });
@@ -340,11 +354,13 @@ const { open, close, isOpen, steps, error } = useCreditChek(options);
 
 Options are read when `open` is called, so they can change between renders.
 
+The **`sessionId` is required too**, but it isn't an option: you pass it to `open` each time, because every verification needs a new session.
+
 **Returns**
 
 | Field | Type | Description |
 |---|---|---|
-| `open` | `(sessionId: string \| () => string \| Promise<string>) => void` | Opens the widget. If it's already open, focuses it |
+| `open` | `(sessionId: string \| () => string \| Promise<string>) => void` | Opens the widget. `sessionId` is **required**: a session ID, or a function that creates one. If the widget is already open, focuses it |
 | `close` | `() => void` | Closes the widget. `onClose` fires as normal |
 | `isOpen` | `boolean` | True from `open` until the widget closes or fails |
 | `steps` | `WidgetStepEvent[]` | Step events since the last `open` |
@@ -354,11 +370,11 @@ If the component unmounts while the widget is open, the modal is removed and cal
 
 ### `<CreditChekButton />`
 
-Takes every `useCreditChek` option, plus `sessionId` (a string or a function), plus any `<button>` props. `children` defaults to "Verify with CreditChek". An `onClick` prop runs before the widget opens; call `event.preventDefault()` in it to stop the widget opening.
+Takes every `useCreditChek` option, plus a **required** `sessionId` prop (a session ID, or a function that creates one), plus any `<button>` props. `children` defaults to "Verify with CreditChek". An `onClick` prop runs before the widget opens; call `event.preventDefault()` in it to stop the widget opening.
 
 ### `openCreditChekWidget(options)`
 
-The same behaviour without React, for use outside components. Takes every `useCreditChek` option plus `sessionId`, and returns a handle:
+The same behaviour without React, for use outside components. Takes every `useCreditChek` option plus a **required** `sessionId`, and returns a handle:
 
 ```ts
 const handle = openCreditChekWidget({ publicKey, widgetId, sessionId: createSession, onClose });
@@ -401,8 +417,8 @@ All types are exported from the package.
 | `identity` | Enters their name, date of birth and BVN or NIN. At least two name words and the exact date of birth must match the official record | Their 11-digit BVN or NIN |
 | `liveness` | Centres their face in the camera, then follows prompts: look left, right, up and down, blink, smile. Their face is matched against the BVN or NIN photo | A camera, good lighting, no glasses or hat |
 
-- **The steps come from the session.** The `services` you create the session with in [Step 1](#step-1-create-a-session-on-your-server) decide which steps the customer goes through.
-- **Include identity with liveness**, in the same session. Liveness compares the customer's face with the photo from their BVN or NIN.
+- **The steps come from your widget.** Your widget's setup on the business dashboard decides which steps the customer goes through.
+- **Include identity with liveness** in your widget. Liveness compares the customer's face with the photo from their BVN or NIN.
 - **Completed steps are skipped.** If identity or liveness is already `completed` on the session, the widget skips it. If both are, the customer sees a success screen straight away.
 
 More modules (credit reports, income and Recova mandates) are coming to the React SDK.
@@ -466,14 +482,14 @@ v2 follows the new session-based widget, which needs a `sessionId` created by yo
 |---|---|
 | `import creditchekSDK from "creditchek-react-sdk"` | `import { useCreditChek } from "@creditchektechsupport/react-sdk"` |
 | `creditchekSDK.open({ publicKey, module, onComplete, onClose })` | `const { open } = useCreditChek({ publicKey, widgetId, onStep, onClose })`, then `open(sessionId)` |
-| `module: ["identity"]` | The session's `services` decide the steps ([Step 1](#step-1-create-a-session-on-your-server)) |
+| `module: ["identity"]` | Your widget's setup on the business dashboard decides the steps |
 | `"income"`, `"credit"`, `"recova"` modules | Not available in v2 yet |
 | `onComplete(result)` for each step | `onStep({ module, status })` |
 | `onClose()` | `onClose({ sessionId, steps })` |
 | Opens a new tab | Opens a modal on your page |
 | No server needed | Your server creates and reads sessions ([Step 1](#step-1-create-a-session-on-your-server), [Step 4](#step-4-confirm-the-result-on-your-server)) |
 
-**From v2:** pass your `widgetId`, which is now required. Remove `modules` and `environment`: the session's `services` decide the steps, and your public key decides live or test mode. Remove `themeColor`.
+**From v2:** create sessions with `sdkId` (your widget ID) instead of `services`, and pass the same ID to the SDK as `widgetId`, which is now required. Remove `modules` and `environment`: your widget decides the steps, and your public key decides live or test mode. Remove `themeColor`.
 
 ---
 
