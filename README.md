@@ -89,10 +89,10 @@ Customer details you already hold can be passed as optional `prefill` values.
 
 Always use a secret key and a public key **from the same app and the same pair** (both live, or both test).
 
-**Widget ID.** Your widget ID is on your [CreditChek business dashboard](https://app.creditchek.africa/). Use the same ID in two places:
+**Widget ID.** Your widget ID is on your [CreditChek business dashboard](https://app.creditchek.africa/). Pass the same ID as `widgetId` in two places:
 
-- as `sdkId`, when your server creates a session ([Step 1](#step-1-create-a-session-on-your-server))
-- as `widgetId`, when your React app opens the widget ([Step 2](#step-2-open-the-widget))
+- when your server creates a session ([Step 1](#step-1-create-a-session-on-your-server))
+- when your React app opens the widget ([Step 2](#step-2-open-the-widget))
 
 **API base URL** (your server): `https://api.creditchek.africa/v1`
 
@@ -128,12 +128,12 @@ POST https://api.creditchek.africa/v1/auth/widget-session/token
 token: <your secret key>
 Content-Type: application/json
 
-{ "sdkId": "<your widget ID>" }
+{ "widgetId": "<your widget ID>" }
 ```
 
 | Field | Type | Description |
 |---|---|---|
-| `sdkId` | `string` | **Required.** Your widget ID from the business dashboard. Use the same ID as `widgetId` in the SDK |
+| `widgetId` | `string` | **Required.** Your widget ID from the business dashboard. Use the same ID as `widgetId` in the SDK |
 | `sessionId` | `string` | Optional. Your own unique ID for the session |
 
 Your widget's setup on the dashboard decides which steps the customer goes through.
@@ -164,7 +164,7 @@ app.post("/api/verification/session", async (req, res) => {
   try {
     const session = await creditchek("/auth/widget-session/token", {
       method: "POST",
-      body: JSON.stringify({ sdkId: WIDGET_ID }),
+      body: JSON.stringify({ widgetId: WIDGET_ID }),
     });
     await saveSessionForCustomer(req, session.sessionId); // your storage
     res.json({ sessionId: session.sessionId });
@@ -489,7 +489,7 @@ v2 follows the new session-based widget, which needs a `sessionId` created by yo
 | Opens a new tab | Opens a modal on your page |
 | No server needed | Your server creates and reads sessions ([Step 1](#step-1-create-a-session-on-your-server), [Step 4](#step-4-confirm-the-result-on-your-server)) |
 
-**From v2:** create sessions with `sdkId` (your widget ID) instead of `services`, and pass the same ID to the SDK as `widgetId`, which is now required. Remove `modules` and `environment`: your widget decides the steps, and your public key decides live or test mode. Remove `themeColor`.
+**From v2:** create sessions with `widgetId` (your widget ID) instead of `services`, and pass the same ID to the SDK as `widgetId`, which is now required. Remove `modules` and `environment`: your widget decides the steps, and your public key decides live or test mode. Remove `themeColor`.
 
 ---
 

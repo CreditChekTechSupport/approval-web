@@ -1,5 +1,11 @@
 # Changelog
 
+## 3.0.2
+
+README only.
+
+- Sessions are now created with `widgetId` instead of `sdkId`. Step 1 shows the new request.
+
 ## 3.0.1
 
 README only.
